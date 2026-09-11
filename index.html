@@ -598,7 +598,9 @@ let view="dash", pathFilter=0, promptCat="All", promptQ="", toolCat="All", toolQ
 function applyToolFilter(){const q=toolQ.toLowerCase();document.querySelectorAll("[data-thay]").forEach(c=>c.classList.toggle("hidden",q&&!c.dataset.thay.includes(q)));}
 function applyPromptFilter(){const q=promptQ.toLowerCase();document.querySelectorAll("[data-hay]").forEach(c=>c.classList.toggle("hidden",q&&!c.dataset.hay.includes(q)));}
 
+let lastView=null;
 function render(){
+  const keepY=view===lastView?window.scrollY:0;
   document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===view));
   const m=$("#main");
   if(view==="dash")m.innerHTML=dash();
@@ -609,7 +611,8 @@ function render(){
   else if(view==="wins")m.innerHTML=wins();
   else m.innerHTML=tools();
   wire();
-  window.scrollTo(0,0);
+  lastView=view;
+  window.scrollTo(0,keepY);
 }
 
 function dash(){
