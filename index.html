@@ -691,7 +691,12 @@ function dash(){
 
 function path(){
   const chips=[0,1,2,3,4,5,6,7,8].map(mo=>`<button class="chip ${pathFilter===mo?"active":""}" data-mod="${mo}">${mo===0?"All modules":"Module "+mo}</button>`).join("");
-  let html=`<h1>Learning Path</h1><p class="sub">41 guides in the order that compounds. Tap the status pill to move a guide along: Not started → Reading → Practicing → Done. A guide is only Done when the thing it teaches exists.</p>${cta()}<div class="chips">${chips}</div>`;
+  let html=`<h1>Learning Path</h1><p class="sub">41 guides in the order that compounds. Tap the status pill to move a guide along: Not started → Reading → Practicing → Done. A guide is only Done when the thing it teaches exists.</p>${cta()}
+  <div class="card" id="vidcard" style="padding:0;overflow:hidden;margin:0 0 18px">
+    <video controls preload="metadata" playsinline style="display:block;width:100%;background:#000" src="howitworks.mp4" onerror="document.getElementById('vidcard').style.display='none'"></video>
+    <p class="bk-note" style="padding:10px 16px;margin:0">37 seconds: how the whole system works before you start.</p>
+  </div>
+  <div class="chips">${chips}</div>`;
   const mods=pathFilter===0?[1,2,3,4,5,6,7,8]:[pathFilter];
   for(const mo of mods){
     const s=modStats(mo);
