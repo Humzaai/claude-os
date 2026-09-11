@@ -257,6 +257,7 @@ body.fx{background-image:none}
 <nav class="rail">
   <p class="logo">Claude<span>OS</span></p>
   <p class="tag">AI in Public · Course System</p>
+  <button class="nav-btn" id="themebtn" style="margin-bottom:8px">◐ Theme: Auto</button>
   <button class="nav-btn active" data-view="dash">Dashboard</button>
   <button class="nav-btn" data-view="path">Learning Path</button>
   <button class="nav-btn" data-view="work">Workbooks</button>
@@ -544,6 +545,14 @@ let S={g:{},x:{},w:[],d:{},best:0,name:"",t:[],tid:0};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
 if(PAID_BUILD&&S.u!==1){S.u=1;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 FREE=PAID_BUILD?false:S.u!==1;
+function applyTheme(){
+  const b=document.getElementById("themebtn");
+  if(S.th==="light"||S.th==="dark"){document.documentElement.dataset.theme=S.th;}
+  else delete document.documentElement.dataset.theme;
+  if(b)b.textContent="◐ Theme: "+(S.th==="light"?"Light":S.th==="dark"?"Dark":"Auto");
+  if(window.__dotRefresh)window.__dotRefresh();
+}
+applyTheme();
 function save(){
   S.d=S.d||{};S.d[today()]=(S.d[today()]||0)+1;
   const st=streak(); if(st>(S.best||0))S.best=st;
@@ -1124,7 +1133,8 @@ function wire(){
     try{
       const parsed=JSON.parse(decodeURIComponent(escape(atob(v))));
       if(typeof parsed!=="object"||!parsed)throw 0;
-      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0,dd:parsed.dd||{},cc:parsed.cc===1?1:0,ccd:parsed.ccd||"",nt:parsed.nt===1?1:0,ht:parsed.ht||"20:00"};
+      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0,dd:parsed.dd||{},cc:parsed.cc===1?1:0,ccd:parsed.ccd||"",nt:parsed.nt===1?1:0,ht:parsed.ht||"20:00",th:parsed.th||""};
+      applyTheme();
       if(!PAID_BUILD)FREE=S.u!==1;
       save();render();
     }catch(e){br.textContent="Invalid code";setTimeout(()=>br.textContent="Restore",2000);}};
@@ -1141,7 +1151,11 @@ function wire(){
     if(!date){const d=new Date();date=d.toISOString().slice(0,10);}
     S.w.unshift({text,saved,date});save();render();};
 }
-document.querySelectorAll(".nav-btn").forEach(b=>b.onclick=()=>{view=b.dataset.view;render();});
+document.querySelectorAll(".nav-btn").forEach(b=>{if(b.dataset.view)b.onclick=()=>{view=b.dataset.view;render();}});
+document.getElementById("themebtn").onclick=()=>{
+  S.th=S.th==="light"?"dark":S.th==="dark"?"":"light";
+  save();applyTheme();};
+applyTheme();
 render();
 
 /* streak nudge: fires only while the tab is open, once per visit */
@@ -1167,6 +1181,7 @@ if(S.nt===1&&"Notification" in window&&Notification.permission==="granted"){
   addEventListener("pointerdown",e=>{ripples.push({x:e.clientX,y:e.clientY,r:0});if(ripples.length>4)ripples.shift();});
   function colors(){const cs=getComputedStyle(document.documentElement);return{dot:cs.getPropertyValue("--dot").trim()||"#E6E6DF",acc:cs.getPropertyValue("--accent").trim()||"#0B5FFF"}}
   let col=colors();
+  window.__dotRefresh=()=>{col=colors()};
   const mq=matchMedia("(prefers-color-scheme: dark)");
   if(mq.addEventListener)mq.addEventListener("change",()=>{col=colors()});
   const G=22,R=130;
