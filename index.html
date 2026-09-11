@@ -850,7 +850,8 @@ function showCert(eyebrow,title,sub,share){
     <input class="c-name" id="cname" placeholder="Type your name" value="${esc(S.name||"")}" aria-label="Your name">
     <div class="c-date">CLAUDE OS · AI IN PUBLIC · ${d.toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"})}</div>
     <div class="bk-row">${shareRow(share,"certcopy")}</div>
-    <p class="bk-note" style="margin-top:12px">Screenshot this card to post it as an image.</p></div>`;
+    <div class="bk-row" style="margin-top:10px;justify-content:center"><button class="add" id="certdl">⬇ Download as image</button></div>
+    <p class="bk-note" style="margin-top:12px">Download the card, or screenshot it, and post it anywhere.</p></div>`;
   document.body.appendChild(ov);
   ov.querySelector(".c-close").onclick=()=>ov.remove();
   ov.onclick=e=>{if(e.target===ov)ov.remove()};
@@ -858,6 +859,49 @@ function showCert(eyebrow,title,sub,share){
   ov.querySelector("#certcopy").onclick=async e=>{
     try{await navigator.clipboard.writeText(share);}catch(_){}
     e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy text",1500);};
+  ov.querySelector("#certdl").onclick=async e=>{
+    e.target.textContent="Rendering…";
+    try{
+      const png=await certPNG(eyebrow,title,sub,ov.querySelector("#cname").value||S.name||"");
+      const a=document.createElement("a");a.href=png;a.download="claude-os-"+title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")+".png";
+      document.body.appendChild(a);a.click();a.remove();
+      e.target.textContent="Saved ✓";
+    }catch(_){e.target.textContent="Screenshot instead (blocked here)";}
+    setTimeout(()=>e.target.textContent="⬇ Download as image",2500);};
+}
+async function certPNG(eyebrow,title,sub,name){
+  try{await Promise.all([
+    document.fonts.load("800 66px 'JetBrains Mono'"),document.fonts.load("500 30px 'JetBrains Mono'"),
+    document.fonts.load("700 26px 'JetBrains Mono'"),document.fonts.load("700 92px Caveat")]);}catch(_){}
+  const W=1400,H=1000,cv=document.createElement("canvas");cv.width=W;cv.height=H;
+  const x=cv.getContext("2d");
+  x.fillStyle="#FAFAF8";x.fillRect(0,0,W,H);
+  x.fillStyle="#DCDCD4";
+  for(let gy=16;gy<H;gy+=34)for(let gx=16;gx<W;gx+=34){x.beginPath();x.arc(gx,gy,2,0,7);x.fill();}
+  const CONF=["#0B5FFF","#188A52","#B36A00","#E0A245","#5B93FF"];
+  for(let i=0;i<34;i++){x.save();x.translate(Math.random()*W,Math.random()*H);x.rotate(Math.random()*6.3);
+    x.globalAlpha=.85;x.fillStyle=CONF[i%5];x.fillRect(-6,-11,12,22);x.restore();}
+  x.globalAlpha=1;
+  const cx=110,cy=120,cw=W-220,ch=H-240;
+  x.fillStyle="#FFFFFF";x.strokeStyle="#E4E4DE";x.lineWidth=2;
+  x.beginPath();x.roundRect(cx,cy,cw,ch,28);x.fill();x.stroke();
+  x.textAlign="center";
+  x.fillStyle="#0B5FFF";x.font="700 26px 'JetBrains Mono',monospace";
+  x.fillText(eyebrow.toUpperCase().split("").join(" "),W/2,cy+120);
+  x.fillStyle="#12161B";x.font="800 66px 'JetBrains Mono',monospace";
+  x.fillText(title,W/2,cy+220);
+  x.fillStyle="#5B6572";x.font="500 30px 'JetBrains Mono',monospace";
+  x.fillText(sub.length>70?sub.slice(0,67)+"…":sub,W/2,cy+280);
+  x.fillStyle="#12161B";x.font="700 92px Caveat,cursive";
+  x.save();x.translate(W/2,cy+430);x.rotate(-0.02);x.fillText(name||"—",0,0);x.restore();
+  x.strokeStyle="#C9C9C0";x.setLineDash([10,8]);x.lineWidth=2;
+  x.beginPath();x.moveTo(W/2-330,cy+470);x.lineTo(W/2+330,cy+470);x.stroke();x.setLineDash([]);
+  x.fillStyle="#5B6572";x.font="700 24px 'JetBrains Mono',monospace";
+  const d=new Date();
+  x.fillText("CLAUDE OS · AI IN PUBLIC · "+d.toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}).toUpperCase(),W/2,cy+560);
+  x.fillStyle="#0B5FFF";x.font="700 28px 'JetBrains Mono',monospace";
+  x.fillText("aiinpublic.com",W/2,cy+640);
+  return cv.toDataURL("image/png");
 }
 
 function showUnlock(){
