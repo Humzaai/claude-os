@@ -148,6 +148,12 @@ h2{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:16.5px;lette
 .onboard ol{margin:10px 0 0;padding-left:22px}
 .onboard li{margin:6px 0}
 .locked{opacity:.62}
+.pillrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.pill-primary{background:var(--accent);color:#fff;border:none;border-radius:999px;padding:11px 20px;font:700 13px "JetBrains Mono",monospace;cursor:pointer}
+.pill-primary:hover{filter:brightness(1.08)}
+:root[data-theme="dark"] .pill-primary{color:#0E1116}
+.pill-ghost{background:none;border:1px solid var(--line);border-radius:999px;padding:11px 18px;font:600 13px "JetBrains Mono",monospace;color:var(--muted);cursor:pointer}
+.pill-ghost:hover{border-color:var(--accent);color:var(--accent-ink)}
 .notebtn{background:none;border:1px solid var(--line);border-radius:6px;color:var(--muted);font:600 10.5px "JetBrains Mono",monospace;cursor:pointer;padding:2px 8px}
 .notebtn:hover{border-color:var(--accent);color:var(--accent-ink)}
 .notebtn.has{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
@@ -688,17 +694,14 @@ function dash(){
   </ol></div>`:""}
   ${cta()}
   ${news}
-  ${!isInstalled()&&S.pwa!==1?`<div class="card" style="margin:0 0 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
-    <div style="min-width:0;flex:1">
-      <div style="font-weight:800">📱 Claude OS works as an app</div>
-      <div class="bk-note" style="margin-top:4px" id="pwahow">${isIOS()
-        ?"iPhone: tap the Share button, then <b>Add to Home Screen</b>. Full screen, works offline, your face never leaves the phone."
-        :"Tap Install, or open the browser menu and choose <b>Add to Home Screen</b>. Full screen, works offline."}</div>
+  ${!isInstalled()&&S.pwa!==1?`<div class="card" style="margin:0 0 20px">
+    <div style="font-weight:800">📱 Use Claude OS as an app</div>
+    <p class="bk-note" style="margin:4px 0 0">Full screen, works offline, opens straight from your home screen.</p>
+    <div class="pillrow">
+      <button class="pill-primary" id="pwainstall">➕ Add to Home Screen</button>
+      <button class="pill-ghost" id="pwalater">Dismiss</button>
     </div>
-    <div class="bk-row" style="flex-shrink:0">
-      ${!isIOS()?`<button class="add" id="pwainstall">Install</button>`:""}
-      <button class="btn2" id="pwalater">Dismiss</button>
-    </div>
+    <p class="bk-note" id="pwahow" style="display:none;margin:10px 0 0"></p>
   </div>`:""}
   <div class="kpis">
     <div class="kpi"><div class="n">${o.pct}%</div><div class="l">Course complete</div></div>
@@ -1131,8 +1134,15 @@ function wire(){
   const pi=$("#pwainstall");
   if(pi)pi.onclick=async()=>{
     if(installPrompt){installPrompt.prompt();const r=await installPrompt.userChoice.catch(()=>null);installPrompt=null;
-      if(r&&r.outcome==="accepted"){S.pwa=1;save();render();toast("Installed. Claude OS is on your home screen now.");}}
-    else{const h=$("#pwahow");if(h)h.innerHTML="Open your browser's menu (⋮ or ⋯) and choose <b>Add to Home Screen</b> or <b>Install app</b>.";}};
+      if(r&&r.outcome==="accepted"){S.pwa=1;save();render();toast("Done. Claude OS is on your home screen now.");}
+      return;}
+    const h=$("#pwahow");
+    if(h){h.style.display="block";
+      h.innerHTML=isIOS()
+        ?"On iPhone: tap the <b>Share</b> button (the square with the arrow), scroll down, tap <b>Add to Home Screen</b>, then <b>Add</b>."
+        :/android/i.test(navigator.userAgent)
+          ?"On Android: tap the browser menu (⋮), then <b>Add to Home screen</b>."
+          :"On this computer: open the browser menu and choose <b>Install Claude OS</b> or <b>Add to Home Screen</b>.";}};
   const pl=$("#pwalater");
   if(pl)pl.onclick=()=>{S.pwa=1;save();render();};
   document.querySelectorAll("[data-note]").forEach(b=>b.onclick=()=>{const s=b.dataset.note;noteOpen[s]=!noteOpen[s];render();});
