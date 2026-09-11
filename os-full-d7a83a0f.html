@@ -634,6 +634,10 @@ function overall(){const done=GUIDES.filter((x,i)=>stat(i)===3).length;return{do
 
 /* ---------- views ---------- */
 let view="dash", pathFilter=0, promptCat="All", promptQ="", toolCat="All", toolQ="", noteOpen={};
+let installPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installPrompt=e;if(view==="dash")render();});
+function isInstalled(){try{return matchMedia("(display-mode: standalone)").matches||navigator.standalone===true}catch(e){return false}}
+function isIOS(){return /iphone|ipad|ipod/i.test(navigator.userAgent)}
 function applyToolFilter(){const q=toolQ.toLowerCase();document.querySelectorAll("[data-thay]").forEach(c=>c.classList.toggle("hidden",q&&!c.dataset.thay.includes(q)));}
 function applyPromptFilter(){const q=promptQ.toLowerCase();document.querySelectorAll("[data-hay]").forEach(c=>c.classList.toggle("hidden",q&&!c.dataset.hay.includes(q)));}
 
@@ -685,6 +689,18 @@ function dash(){
   </ol></div>`:""}
   ${cta()}
   ${news}
+  ${!isInstalled()&&S.pwa!==1?`<div class="card" style="margin:0 0 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
+    <div style="min-width:0;flex:1">
+      <div style="font-weight:800">📱 Claude OS works as an app</div>
+      <div class="bk-note" style="margin-top:4px" id="pwahow">${isIOS()
+        ?"iPhone: tap the Share button, then <b>Add to Home Screen</b>. Full screen, works offline, your face never leaves the phone."
+        :"Tap Install, or open the browser menu and choose <b>Add to Home Screen</b>. Full screen, works offline."}</div>
+    </div>
+    <div class="bk-row" style="flex-shrink:0">
+      ${!isIOS()?`<button class="add" id="pwainstall">Install</button>`:""}
+      <button class="btn2" id="pwalater">Dismiss</button>
+    </div>
+  </div>`:""}
   <div class="kpis">
     <div class="kpi"><div class="n">${o.pct}%</div><div class="l">Course complete</div></div>
     <div class="kpi"><div class="n">${o.done}<span style="font-size:18px;color:var(--muted)">/${o.total}</span></div><div class="l">Guides done</div></div>
@@ -1113,6 +1129,13 @@ function wire(){
   if(ccb)ccb.onclick=showCourseCert;
   const no=$("#newsok");
   if(no)no.onclick=()=>{S.seenv=APP_V;save();render();};
+  const pi=$("#pwainstall");
+  if(pi)pi.onclick=async()=>{
+    if(installPrompt){installPrompt.prompt();const r=await installPrompt.userChoice.catch(()=>null);installPrompt=null;
+      if(r&&r.outcome==="accepted"){S.pwa=1;save();render();toast("Installed. Claude OS is on your home screen now.");}}
+    else{const h=$("#pwahow");if(h)h.innerHTML="Open your browser's menu (⋮ or ⋯) and choose <b>Add to Home Screen</b> or <b>Install app</b>.";}};
+  const pl=$("#pwalater");
+  if(pl)pl.onclick=()=>{S.pwa=1;save();render();};
   document.querySelectorAll("[data-note]").forEach(b=>b.onclick=()=>{const s=b.dataset.note;noteOpen[s]=!noteOpen[s];render();});
   document.querySelectorAll("[data-notetxt]").forEach(t=>{
     t.onchange=()=>{S.n=S.n||{};S.n[t.dataset.notetxt]=t.value;save();render();};});
@@ -1187,7 +1210,7 @@ function wire(){
     try{
       const parsed=JSON.parse(decodeURIComponent(escape(atob(v))));
       if(typeof parsed!=="object"||!parsed)throw 0;
-      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0,dd:parsed.dd||{},cc:parsed.cc===1?1:0,ccd:parsed.ccd||"",nt:parsed.nt===1?1:0,ht:parsed.ht||"20:00",th:parsed.th||"",n:parsed.n||{},seenv:parsed.seenv||0};
+      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0,dd:parsed.dd||{},cc:parsed.cc===1?1:0,ccd:parsed.ccd||"",nt:parsed.nt===1?1:0,ht:parsed.ht||"20:00",th:parsed.th||"",n:parsed.n||{},seenv:parsed.seenv||0,pwa:parsed.pwa===1?1:0};
       applyTheme();
       if(!PAID_BUILD)FREE=S.u!==1;
       save();render();
