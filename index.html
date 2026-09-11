@@ -532,6 +532,7 @@ const TOOLS=[
 const KEY="claudeos-v1";
 let S={g:{},x:{},w:[],d:{},best:0,name:"",t:[],tid:0};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
+if(PAID_BUILD&&S.u!==1){S.u=1;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 FREE=PAID_BUILD?false:S.u!==1;
 function save(){
   S.d=S.d||{};S.d[today()]=(S.d[today()]||0)+1;
