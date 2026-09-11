@@ -5,9 +5,9 @@
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Claude OS</title>
-<meta name="description" content="The AI in Public course system. 41 guides, 50 prompts, 120 tools, tasks, streaks, XP, and certificates.">
+<meta name="description" content="The AI in Public course system, full edition.">
 <meta property="og:title" content="Claude OS">
-<meta property="og:description" content="The AI in Public course system. 41 guides, 50 prompts, 120 tools, tasks, streaks, XP, and certificates.">
+<meta property="og:description" content="The AI in Public course system, full edition.">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
@@ -256,6 +256,7 @@ body.fx{background-image:none}
   <button class="nav-btn" data-view="wins">Wins Log</button>
   <button class="nav-btn" data-view="tools">Tool Vault</button>
   <a class="add" id="railup" href="https://www.aiinpublic.com/subscribe" target="_blank" rel="noopener" style="display:none;text-align:center;text-decoration:none;margin-top:10px">⚡ Unlock full OS</a>
+  <button class="certlink unlock-open" id="railcode" style="display:none;margin:8px 10px 0;text-align:left">Have an unlock code?</button>
   <p class="foot">Progress saves in this browser automatically.<br><br>New guides ship weekly at<br><a href="https://www.aiinpublic.com" target="_blank" rel="noopener">aiinpublic.com</a></p>
 </nav>
 <main id="main"></main>
@@ -307,7 +308,10 @@ const GUIDES=[
 ];
 const MODULES=["","Claude Foundations","Prompting","Projects & Second Brain","Claude Code","Skills & Automation","Creative & Visual","Agentic & Advanced","Leverage & Income"];
 const STATUS=["Not started","Reading","Practicing","Done"];
-const FREE=false;
+const PAID_BUILD=true;
+let FREE=false;
+const UNLOCK_HASH=830657118;
+function codeHash(s){let h=5381;for(const c of s.toUpperCase().replace(/[^A-Z0-9]/g,"")){h=((h*33)^c.charCodeAt(0))>>>0}return h}
 const SUB="https://www.aiinpublic.com/subscribe";
 const FREE_PROMPTS=10, BONUS_PROMPTS=5;
 function lockedGuide(i){return FREE&&GUIDES[i][1]>1}
@@ -315,7 +319,7 @@ function promptLocked(idx){if(!FREE)return false;return idx>=FREE_PROMPTS+((S.be
 function dstr(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function today(){return dstr(new Date())}
 function streak(){const d=S.d||{};let n=0,t=new Date();if(!d[today()])t.setDate(t.getDate()-1);while(d[dstr(t)]){n++;t.setDate(t.getDate()-1);}return n}
-function cta(){return FREE?`<div class="cta-band"><b>You're on the free edition.</b> Module 1 of 8 is unlocked. Paid subscribers get all 41 guides, all 50 prompts, all 8 workbooks, and every future guide added free. <a href="${SUB}" target="_blank" rel="noopener">Unlock the full Claude OS →</a></div>`:""}
+function cta(){return FREE?`<div class="cta-band"><b>You're on the free edition.</b> Module 1 of 8 is unlocked. Paid subscribers get all 41 guides, all 50 prompts, all 8 workbooks, and every future guide added free. <a href="${SUB}" target="_blank" rel="noopener">Unlock the full Claude OS →</a><br><button class="certlink unlock-open" style="display:inline;padding:0;margin-top:6px">Already a paid subscriber? Enter your unlock code</button></div>`:""}
 function shareText(){const o=overall();const t=S.w.reduce((a,w)=>a+(parseFloat(w.saved)||0),0);const st=streak();
   return "I'm "+o.pct+"% through Claude OS. "+o.done+"/"+o.total+" Claude guides turned into real builds"+(t?", "+(t%1?t.toFixed(1):t)+"h/week saved":"")+(st>1?", "+st+"-day streak":"")+". Learning Claude in public with AI in Public → aiinpublic.com"}
 function xShare(txt){return "https://twitter.com/intent/tweet?text="+encodeURIComponent(txt)}
@@ -529,6 +533,7 @@ const TOOLS=[
 const KEY="claudeos-v1";
 let S={g:{},x:{},w:[],d:{},best:0,name:"",t:[],tid:0};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
+FREE=PAID_BUILD?false:S.u!==1;
 function save(){
   S.d=S.d||{};S.d[today()]=(S.d[today()]||0)+1;
   const st=streak(); if(st>(S.best||0))S.best=st;
@@ -855,8 +860,37 @@ function showCert(eyebrow,title,sub,share){
     e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy text",1500);};
 }
 
+function showUnlock(){
+  const old=document.getElementById("ov"); if(old)old.remove();
+  const ov=document.createElement("div"); ov.className="overlay"; ov.id="ov";
+  ov.innerHTML=`<div class="cert">
+    <button class="c-close" aria-label="Close">✕</button>
+    <div class="c-eyebrow">Paid subscribers</div>
+    <div class="c-title">Enter your unlock code</div>
+    <p class="c-sub">The code is in your paid welcome email and the pinned post for paid subscribers on <a href="https://www.aiinpublic.com" target="_blank" rel="noopener">aiinpublic.com</a>. Enter it once and everything stays unlocked on this device.</p>
+    <input class="c-name" id="ucode" placeholder="UNLOCK CODE" style="font:700 20px 'JetBrains Mono',monospace;text-transform:uppercase" autocomplete="off">
+    <p class="bk-note" id="umsg" style="min-height:18px;margin:8px 0 12px"></p>
+    <div class="bk-row" style="justify-content:center"><button class="add" id="usubmit">Unlock the full OS</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector(".c-close").onclick=()=>ov.remove();
+  ov.onclick=e=>{if(e.target===ov)ov.remove()};
+  const input=ov.querySelector("#ucode"),msg=ov.querySelector("#umsg");
+  const go=()=>{
+    if(codeHash(input.value)===UNLOCK_HASH){
+      S.u=1;save();FREE=false;ov.remove();render();
+      showCert("Welcome","Full OS Unlocked","All 41 guides, 50 prompts, and 8 workbooks are now yours on this device. Your progress so far carried over.",
+        "Just unlocked the full Claude OS. 41 guides, learning Claude by building. aiinpublic.com");
+    }else{msg.textContent="That code doesn't match. Check the pinned paid post, or reply to any paid email and Hamza will send it.";input.focus();}
+  };
+  ov.querySelector("#usubmit").onclick=go;
+  input.onkeydown=e=>{if(e.key==="Enter")go()};
+  input.focus();
+}
+
 /* ---------- events ---------- */
 function wire(){
+  document.querySelectorAll(".unlock-open").forEach(b=>b.onclick=showUnlock);
   document.querySelectorAll("[data-cert-mod]").forEach(b=>b.onclick=e=>{e.stopPropagation();const mo=+b.dataset.certMod;
     showCert("Certificate of Completion","Module "+mo+": "+MODULES[mo],"Every guide in this module read, practiced, and built.",
       "Just completed Module "+mo+" ("+MODULES[mo]+") of Claude OS. Every guide in it built and shipped. Learning Claude in public with AI in Public → aiinpublic.com");});
@@ -867,7 +901,8 @@ function wire(){
   if(sc)sc.onclick=async()=>{
     try{await navigator.clipboard.writeText(shareText());}catch(_){}
     sc.textContent="Copied";setTimeout(()=>sc.textContent="Copy share text",1500);};
-  if(FREE){const r=document.getElementById("railup");if(r)r.style.display="block";}
+  if(FREE){const r=document.getElementById("railup");if(r)r.style.display="block";const rc=document.getElementById("railcode");if(rc)rc.style.display="block";}
+  else{const r=document.getElementById("railup");if(r)r.style.display="none";const rc=document.getElementById("railcode");if(rc)rc.style.display="none";}
   document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{const i=+b.dataset.g;S.g[GUIDES[i][4]]=(stat(i)+1)%4;save();render();});
   document.querySelectorAll("[data-mod]").forEach(b=>b.onclick=()=>{pathFilter=+b.dataset.mod;render();});
   document.querySelectorAll("[data-goto-mod]").forEach(b=>{const go=()=>{pathFilter=+b.dataset.gotoMod;view="path";render();};b.onclick=go;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}}});
@@ -906,12 +941,13 @@ function wire(){
     try{
       const parsed=JSON.parse(decodeURIComponent(escape(atob(v))));
       if(typeof parsed!=="object"||!parsed)throw 0;
-      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0};
+      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0};
+      if(!PAID_BUILD)FREE=S.u!==1;
       save();render();
     }catch(e){br.textContent="Invalid code";setTimeout(()=>br.textContent="Restore",2000);}};
   const brs=$("#bkreset");
   if(brs)brs.onclick=()=>{
-    if(brs.dataset.arm){S={g:{},x:{},w:[],d:{},best:0,name:"",t:[],tid:0};save();render();return;}
+    if(brs.dataset.arm){S={g:{},x:{},w:[],d:{},best:0,name:"",t:[],tid:0,u:S.u===1?1:0};save();render();return;}
     brs.dataset.arm="1";brs.textContent="Tap again to erase everything";
     setTimeout(()=>{delete brs.dataset.arm;brs.textContent="Reset all progress";},3000);};
   const add=$("#addwin");
