@@ -24,6 +24,7 @@
   --read:#0B5FFF; --read-soft:#EAF1FF;
   --none:#8A93A0; --none-soft:#EFEFEA;
   --shadow:0 1px 2px rgba(18,22,27,.05),0 4px 16px rgba(18,22,27,.05);
+  --gold:#B8860B;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
@@ -34,6 +35,7 @@
     --read:#5B93FF; --read-soft:#1B2A4A;
     --none:#7A8494; --none-soft:#1D232C;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3);
+    --gold:#D4A72C;
   }
 }
 :root[data-theme="dark"]{
@@ -44,6 +46,7 @@
   --read:#5B93FF; --read-soft:#1B2A4A;
   --none:#7A8494; --none-soft:#1D232C;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.3);
+  --gold:#D4A72C;
 }
 *{box-sizing:border-box}
 body{margin:0;background-color:var(--bg);background-image:radial-gradient(var(--dot) 1px,transparent 1.4px);background-size:22px 22px;color:var(--ink);font:14.5px/1.6 "JetBrains Mono",ui-monospace,monospace;-webkit-font-smoothing:antialiased}
@@ -228,6 +231,13 @@ body.fx{background-image:none}
 .c-handname{font:700 40px/1.15 "Caveat",cursive;color:var(--ink);min-height:46px;margin:2px 0 0}
 .cert .c-name{background:transparent;border:none;border-bottom:2px dashed var(--line);border-radius:0;font:700 30px/1.2 "Caveat",cursive;padding:2px 10px;width:70%}
 .cert .c-name::placeholder{font:600 22px "Caveat",cursive;color:var(--muted)}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:13px 22px;border-radius:10px;font:600 13px "JetBrains Mono",monospace;z-index:70;box-shadow:0 8px 30px rgba(0,0,0,.3);max-width:min(90vw,520px);text-align:center}
+.cert.grand{border:2px solid var(--ink);outline:1.5px solid var(--gold);outline-offset:-8px}
+.g-seal{position:absolute;top:16px;left:16px;width:46px;height:46px;border-radius:50%;background:var(--gold);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid var(--ink)}
+.streak-alert{background:var(--prac-soft);border:1px solid var(--prac);border-radius:12px;padding:13px 18px;margin:0 0 18px;font-size:13.5px}
+.habit-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.habit-row input[type=time]{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:600 13px "JetBrains Mono",monospace;color:var(--ink)}
+.habit-row .hl{font:500 11px "JetBrains Mono",monospace;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .confetti{position:absolute;top:-12px;width:8px;height:14px;opacity:.9;animation:fall 3.2s linear infinite}
 @keyframes fall{to{transform:translateY(560px) rotate(540deg)}}
 @media (prefers-reduced-motion: reduce){.confetti{display:none}}
@@ -658,12 +668,21 @@ function dash(){
     return `<h2>Today</h2><div class="card">
       ${td.length?td.slice(0,6).map(taskRow).join(""):`<p class="empty">No tasks for today. Open <button class="certlink" style="display:inline;margin:0" data-goto="tasks">Tasks</button> and pull up the one thing that matters most.</p>`}
     </div>`})()}
+  ${st>0&&!(S.d&&S.d[today()])?`<div class="streak-alert">🔥 <b>${st}-day streak on the line today.</b> One guide, one checkbox, or one logged win keeps it alive. Ten minutes is enough.</div>`:""}
   <h2>Streak</h2>
   <div class="card">
     <div class="miles">${miles}</div>
     ${best>=7
       ?`<p class="bk-note" style="margin-top:12px">You've earned the 7-Day Consistency Award. <button class="certlink" id="award" style="display:inline;padding:0">★ View your award</button>${FREE?" It also unlocked "+BONUS_PROMPTS+" bonus prompts in your library.":""}</p>`
       :`<p class="bk-note" style="margin-top:12px">Show up ${7-Math.min(st,7)} more day${7-st===1?"":"s"} in a row to earn the 7-Day Consistency Award${FREE?". It unlocks "+BONUS_PROMPTS+" bonus prompts, free":""}. Any progress counts: a status change, a checkbox, a logged win.</p>`}
+    <div class="habit-row">
+      <span class="hl">Build the habit · daily reading time</span>
+      <input type="time" id="habitTime" value="${esc(S.ht||"20:00")}" aria-label="Daily reading time">
+      <a class="btn2" id="gcal" href="${gcalHref()}" target="_blank" rel="noopener">Add to Google Calendar</a>
+      <button class="btn2" id="icsdl">Apple / Outlook (.ics)</button>
+      <button class="btn2" id="notifbtn">${S.nt===1?"Tab reminders on ✓":"Remind me in this tab"}</button>
+    </div>
+    <p class="bk-note">The calendar event pings your phone every day, 10 minutes before your reading time. Tab reminders only fire while this page is open.</p>
   </div>
   <h2>Activity <span class="mono" style="font-size:12px;color:var(--muted);font-weight:400">last 12 weeks</span></h2>
   <div class="card">${heatmap()}<p class="bk-note">Every status change, checkbox, task, and win paints a square. Streaks look after today. This is the long game.</p></div>
@@ -684,7 +703,7 @@ function dash(){
       <div class="g-meta"><span>Module ${GUIDES[next][1]}</span><span>${GUIDES[next][2]}</span><span>${GUIDES[next][3]}</span></div>
       <div class="g-build">You'll build: ${esc(GUIDES[next][5])}</div></div>
       <button class="status s${stat(next)}" data-g="${next}">${STATUS[stat(next)]}</button>
-    </div></div>`:FREE?`<h2>Module 1 complete</h2><div class="card"><p style="margin:0 0 10px">You finished everything in the free edition. Modules 2 through 8 are waiting: Claude Code, Skills, Loops, Agents, and 36 more guides with their workbooks.</p><a class="add" style="display:inline-block;text-decoration:none" href="${SUB}" target="_blank" rel="noopener">Unlock the full Claude OS</a></div>`:`<h2>Course complete</h2><div class="card"><p style="margin:0">All 41 guides done. Go back through the Wins Log. That's your receipt. Then start building in public.</p></div>`}
+    </div></div>`:FREE?`<h2>Module 1 complete</h2><div class="card"><p style="margin:0 0 10px">You finished everything in the free edition. Modules 2 through 8 are waiting: Claude Code, Skills, Loops, Agents, and 36 more guides with their workbooks.</p><a class="add" style="display:inline-block;text-decoration:none" href="${SUB}" target="_blank" rel="noopener">Unlock the full Claude OS</a></div>`:`<h2>Course complete</h2><div class="card"><p style="margin:0 0 12px">All 41 guides done. Go back through the Wins Log. That's your receipt. Then start building in public.</p><button class="add" id="coursecert">🎓 View your Course Certificate</button></div>`}
   <h2>Modules</h2>
   <div class="modbars">${bars}</div>
   <h2>Backup & sync</h2>
@@ -908,6 +927,98 @@ async function certPNG(eyebrow,title,sub,name){
   return cv.toDataURL("image/png");
 }
 
+function pad2(n){return String(n).padStart(2,"0")}
+function habitTimes(){const t=(S.ht||"20:00").split(":");const d=new Date();d.setHours(+t[0],+t[1],0,0);
+  const e=new Date(d.getTime()+30*60000);
+  const f=x=>x.getFullYear()+pad2(x.getMonth()+1)+pad2(x.getDate())+"T"+pad2(x.getHours())+pad2(x.getMinutes())+"00";
+  return{start:f(d),end:f(e)}}
+function gcalHref(){const t=habitTimes();
+  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent("Claude OS · reading time")+"&dates="+t.start+"/"+t.end+"&recur="+encodeURIComponent("RRULE:FREQ=DAILY")+"&details="+encodeURIComponent("Keep the streak. Open your Claude OS: https://humzaai.github.io/claude-os/")}
+function icsFile(){const t=habitTimes();
+  return ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Claude OS//EN","BEGIN:VEVENT",
+    "UID:claude-os-reading-"+t.start+"@aiinpublic.com","DTSTART:"+t.start,"DTEND:"+t.end,
+    "RRULE:FREQ=DAILY","SUMMARY:Claude OS · reading time",
+    "DESCRIPTION:Keep the streak. Open your Claude OS: https://humzaai.github.io/claude-os/",
+    "BEGIN:VALARM","TRIGGER:-PT10M","ACTION:DISPLAY","DESCRIPTION:You have time to read. Your Claude OS streak is waiting.","END:VALARM",
+    "END:VEVENT","END:VCALENDAR"].join("\r\n")}
+function toast(msg){
+  const old=document.querySelector(".toast"); if(old)old.remove();
+  const t=document.createElement("div");t.className="toast";t.textContent=msg;
+  document.body.appendChild(t);setTimeout(()=>t.remove(),4500);}
+function credId(){return "OS-"+("00000000"+codeHash((S.name||"anon")+"|"+(S.ccd||today()))).slice(-8)}
+function showCourseCert(){
+  const old=document.getElementById("ov"); if(old)old.remove();
+  const ov=document.createElement("div"); ov.className="overlay"; ov.id="ov";
+  const d=S.ccd?new Date(S.ccd+"T12:00:00"):new Date();
+  const dateStr=d.toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+  const share="I completed Claude OS: all 8 modules, all 41 guides, every one of them built. Credential "+credId()+". The course by AI in Public → aiinpublic.com";
+  ov.innerHTML=`<div class="cert grand">${confetti()}
+    <button class="c-close" aria-label="Close">✕</button>
+    <div class="g-seal">⚡</div>
+    <div class="c-eyebrow" style="color:var(--gold)">Certificate of Completion</div>
+    <div class="c-title">Claude OS</div>
+    <p class="c-sub" style="margin-bottom:4px">This certifies that</p>
+    <input class="c-name" id="cname" placeholder="Type your name" value="${esc(S.name||"")}" aria-label="Your name">
+    <p class="c-sub" style="margin-top:10px">has completed all 8 modules and 41 guides of the AI in Public Claude course, each one finished by building, over ${Object.keys(S.dd||{}).length||14}+ days of work.</p>
+    <div class="c-date">${dateStr} · CREDENTIAL ${credId()} · CLAUDE OS · AI IN PUBLIC</div>
+    <div class="bk-row">${shareRow(share,"certcopy")}</div>
+    <div class="bk-row" style="margin-top:10px;justify-content:center"><button class="add" id="certdl">⬇ Download certificate</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.querySelector(".c-close").onclick=()=>ov.remove();
+  ov.onclick=e=>{if(e.target===ov)ov.remove()};
+  ov.querySelector("#cname").oninput=e=>{S.name=e.target.value;save();};
+  ov.querySelector("#certcopy").onclick=async e=>{try{await navigator.clipboard.writeText(share);}catch(_){}
+    e.target.textContent="Copied";setTimeout(()=>e.target.textContent="Copy text",1500);};
+  ov.querySelector("#certdl").onclick=async e=>{
+    e.target.textContent="Rendering…";
+    try{
+      const png=await courseCertPNG(ov.querySelector("#cname").value||S.name||"");
+      const a=document.createElement("a");a.href=png;a.download="claude-os-certificate.png";
+      document.body.appendChild(a);a.click();a.remove();e.target.textContent="Saved ✓";
+    }catch(_){e.target.textContent="Screenshot instead (blocked here)";}
+    setTimeout(()=>e.target.textContent="⬇ Download certificate",2500);};
+}
+async function courseCertPNG(name){
+  try{await Promise.all([
+    document.fonts.load("800 84px 'JetBrains Mono'"),document.fonts.load("500 30px 'JetBrains Mono'"),
+    document.fonts.load("700 26px 'JetBrains Mono'"),document.fonts.load("700 110px Caveat")]);}catch(_){}
+  const W=1600,H=1131,cv=document.createElement("canvas");cv.width=W;cv.height=H;
+  const x=cv.getContext("2d"),GOLD="#B8860B";
+  x.fillStyle="#FAFAF8";x.fillRect(0,0,W,H);
+  x.fillStyle="#E6E6DF";
+  for(let gy=14;gy<H;gy+=32)for(let gx=14;gx<W;gx+=32){x.beginPath();x.arc(gx,gy,1.8,0,7);x.fill();}
+  x.fillStyle="#FFFFFF";x.strokeStyle="#12161B";x.lineWidth=3;
+  x.beginPath();x.roundRect(70,70,W-140,H-140,10);x.fill();x.stroke();
+  x.strokeStyle=GOLD;x.lineWidth=1.5;
+  x.beginPath();x.roundRect(86,86,W-172,H-172,6);x.stroke();
+  x.textAlign="center";
+  x.fillStyle=GOLD;x.font="700 28px 'JetBrains Mono',monospace";
+  x.fillText("C E R T I F I C A T E   O F   C O M P L E T I O N",W/2,210);
+  x.fillStyle="#12161B";x.font="800 92px 'JetBrains Mono',monospace";
+  x.fillText("Claude OS",W/2,330);
+  x.fillStyle="#5B6572";x.font="500 30px 'JetBrains Mono',monospace";
+  x.fillText("This certifies that",W/2,420);
+  x.fillStyle="#12161B";x.font="700 110px Caveat,cursive";
+  x.save();x.translate(W/2,560);x.rotate(-0.015);x.fillText(name||"—",0,0);x.restore();
+  x.strokeStyle="#C9C9C0";x.setLineDash([12,9]);x.lineWidth=2;
+  x.beginPath();x.moveTo(W/2-380,600);x.lineTo(W/2+380,600);x.stroke();x.setLineDash([]);
+  x.fillStyle="#5B6572";x.font="500 29px 'JetBrains Mono',monospace";
+  x.fillText("has completed all 8 modules and 41 guides of the",W/2,680);
+  x.fillText("AI in Public Claude course, each one finished by building.",W/2,724);
+  const d=S.ccd?new Date(S.ccd+"T12:00:00"):new Date();
+  x.fillStyle="#12161B";x.font="700 26px 'JetBrains Mono',monospace";
+  x.fillText(d.toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"}).toUpperCase(),W/2,830);
+  x.fillStyle="#5B6572";x.font="500 22px 'JetBrains Mono',monospace";
+  x.fillText("CREDENTIAL "+credId()+" · CLAUDE OS · AI IN PUBLIC",W/2,872);
+  x.fillStyle="#0B5FFF";x.font="700 28px 'JetBrains Mono',monospace";
+  x.fillText("aiinpublic.com",W/2,950);
+  x.beginPath();x.arc(W-230,H-230,74,0,7);x.fillStyle=GOLD;x.fill();
+  x.beginPath();x.arc(W-230,H-230,74,0,7);x.strokeStyle="#12161B";x.lineWidth=3;x.stroke();
+  x.fillStyle="#FFFFFF";x.font="800 64px 'JetBrains Mono',monospace";
+  x.fillText("⚡",W-230,H-208);
+  return cv.toDataURL("image/png");
+}
 function showUnlock(){
   const old=document.getElementById("ov"); if(old)old.remove();
   const ov=document.createElement("div"); ov.className="overlay"; ov.id="ov";
@@ -951,7 +1062,32 @@ function wire(){
     sc.textContent="Copied";setTimeout(()=>sc.textContent="Copy share text",1500);};
   if(FREE){const r=document.getElementById("railup");if(r)r.style.display="block";const rc=document.getElementById("railcode");if(rc)rc.style.display="block";}
   else{const r=document.getElementById("railup");if(r)r.style.display="none";const rc=document.getElementById("railcode");if(rc)rc.style.display="none";}
-  document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{const i=+b.dataset.g;S.g[GUIDES[i][4]]=(stat(i)+1)%4;save();render();});
+  document.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{const i=+b.dataset.g;
+    const next=(stat(i)+1)%4;
+    if(next===3){const k=today();S.dd=S.dd||{};
+      if((S.dd[k]||0)>=3){toast("3 guides marked Done today. That's the daily limit. This course is built, not binged. See you tomorrow.");return;}
+      S.dd[k]=(S.dd[k]||0)+1;}
+    S.g[GUIDES[i][4]]=next;save();render();
+    if(!FREE&&overall().pct===100&&S.cc!==1){S.cc=1;S.ccd=today();save();setTimeout(showCourseCert,500);}});
+  const ccb=$("#coursecert");
+  if(ccb)ccb.onclick=showCourseCert;
+  const ht=$("#habitTime");
+  if(ht)ht.onchange=()=>{S.ht=ht.value||"20:00";save();const g=$("#gcal");if(g)g.href=gcalHref();};
+  const ics=$("#icsdl");
+  if(ics)ics.onclick=()=>{
+    try{
+      const blob=new Blob([icsFile()],{type:"text/calendar"});
+      const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="claude-os-reading-time.ics";
+      document.body.appendChild(a);a.click();a.remove();
+      ics.textContent="Saved ✓";
+    }catch(_){ics.textContent="Use Google Calendar instead";}
+    setTimeout(()=>ics.textContent="Apple / Outlook (.ics)",2200);};
+  const nb=$("#notifbtn");
+  if(nb)nb.onclick=async()=>{
+    if(!("Notification" in window)){toast("This browser doesn't support notifications. Use the calendar reminder instead.");return;}
+    const p=await Notification.requestPermission();
+    if(p==="granted"){S.nt=1;save();render();toast("Done. While this tab is open, we'll nudge you if your streak is at risk.");}
+    else toast("Notifications are blocked for this site. The calendar reminder still works on your phone.");};
   document.querySelectorAll("[data-mod]").forEach(b=>b.onclick=()=>{pathFilter=+b.dataset.mod;render();});
   document.querySelectorAll("[data-goto-mod]").forEach(b=>{const go=()=>{pathFilter=+b.dataset.gotoMod;view="path";render();};b.onclick=go;b.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}}});
   document.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{promptCat=b.dataset.cat;render();});
@@ -989,7 +1125,7 @@ function wire(){
     try{
       const parsed=JSON.parse(decodeURIComponent(escape(atob(v))));
       if(typeof parsed!=="object"||!parsed)throw 0;
-      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0};
+      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0,dd:parsed.dd||{},cc:parsed.cc===1?1:0,ccd:parsed.ccd||"",nt:parsed.nt===1?1:0,ht:parsed.ht||"20:00"};
       if(!PAID_BUILD)FREE=S.u!==1;
       save();render();
     }catch(e){br.textContent="Invalid code";setTimeout(()=>br.textContent="Restore",2000);}};
@@ -1008,6 +1144,14 @@ function wire(){
 }
 document.querySelectorAll(".nav-btn").forEach(b=>b.onclick=()=>{view=b.dataset.view;render();});
 render();
+
+/* streak nudge: fires only while the tab is open, once per visit */
+if(S.nt===1&&"Notification" in window&&Notification.permission==="granted"){
+  setTimeout(()=>{
+    if(!(S.d&&S.d[today()])){const s=streak();
+      if(s>0){try{new Notification("Claude OS",{body:"You have time to read. Your "+s+"-day streak is waiting."});}catch(e){}}}
+  },45000);
+}
 
 /* ---------- interactive dot field ---------- */
 (function(){
