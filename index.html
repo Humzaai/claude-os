@@ -9,7 +9,12 @@
 <meta property="og:description" content="Learn Claude by building. 41 guides tracked, tasks, streaks, XP, and a 120-tool vault. By AI in Public.">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+<meta name="theme-color" content="#0B5FFF">
+<link rel="manifest" href="/claude-os/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/claude-os/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Claude OS">
+<link rel="icon" href="/claude-os/icon-192.png">
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -143,6 +148,11 @@ h2{font-family:"JetBrains Mono",monospace;font-weight:800;font-size:16.5px;lette
 .onboard ol{margin:10px 0 0;padding-left:22px}
 .onboard li{margin:6px 0}
 .locked{opacity:.62}
+.notebtn{background:none;border:1px solid var(--line);border-radius:6px;color:var(--muted);font:600 10.5px "JetBrains Mono",monospace;cursor:pointer;padding:2px 8px}
+.notebtn:hover{border-color:var(--accent);color:var(--accent-ink)}
+.notebtn.has{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-soft)}
+.g-notes{display:block;width:100%;min-height:74px;margin-top:10px;background:var(--bg);border:1px dashed var(--line);border-radius:8px;padding:10px 12px;font:13px/1.6 "JetBrains Mono",monospace;color:var(--ink);resize:vertical;box-sizing:border-box}
+.g-notes:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .locked .g-title,.locked .p-name{color:var(--muted)}
 a.status{display:inline-block;text-align:center;text-decoration:none}
 a.status:hover{text-decoration:none;color:var(--accent-ink)}
@@ -541,6 +551,15 @@ const TOOLS=[
 
 /* ---------- state ---------- */
 const KEY="claudeos-v1";
+const APP_V=16;
+const WHATS_NEW=[
+"Course Certificate: finish all 41 guides and earn a named, credentialed diploma you can download",
+"Daily pace limit: 3 guides can go Done per day. Real learning takes nights between them",
+"Streak reminders: a daily reading time on your phone's calendar, plus in-tab nudges",
+"Notes on every guide: your build journal, saved automatically",
+"Install as an app: open the browser menu and tap Add to Home Screen",
+"Light and dark themes: the ◐ button in the sidebar"
+];
 let S={g:{},x:{},w:[],d:{},best:0,name:"",t:[],tid:0};
 try{const raw=localStorage.getItem(KEY); if(raw) S=Object.assign(S,JSON.parse(raw));}catch(e){}
 if(PAID_BUILD&&S.u!==1){S.u=1;try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
@@ -613,7 +632,7 @@ function modStats(m){const g=GUIDES.map((x,i)=>[x,i]).filter(([x])=>x[1]===m);co
 function overall(){const done=GUIDES.filter((x,i)=>stat(i)===3).length;return{done,total:GUIDES.length,pct:Math.round(done/GUIDES.length*100)}}
 
 /* ---------- views ---------- */
-let view="dash", pathFilter=0, promptCat="All", promptQ="", toolCat="All", toolQ="";
+let view="dash", pathFilter=0, promptCat="All", promptQ="", toolCat="All", toolQ="", noteOpen={};
 function applyToolFilter(){const q=toolQ.toLowerCase();document.querySelectorAll("[data-thay]").forEach(c=>c.classList.toggle("hidden",q&&!c.dataset.thay.includes(q)));}
 function applyPromptFilter(){const q=promptQ.toLowerCase();document.querySelectorAll("[data-hay]").forEach(c=>c.classList.toggle("hidden",q&&!c.dataset.hay.includes(q)));}
 
@@ -631,6 +650,8 @@ function render(){
   else m.innerHTML=tools();
   wire();
   lastView=view;
+  const op=overall();
+  document.title=(op.done?op.pct+"% · ":"")+"Claude OS";
   window.scrollTo(0,keepY);
 }
 
@@ -647,6 +668,13 @@ function dash(){
     </div>`}).join("");
   const miles=[3,7,14,30].map(m=>`<span class="mile ${best>=m?"hit":""}">${m} days${m===7?" ★":""}</span>`).join("");
   const fresh=Object.keys(S.g).length===0&&Object.keys(S.x).length===0&&S.w.length===0;
+  const news=S.seenv!==APP_V&&!fresh?`<div class="card" style="border-color:var(--accent);margin:0 0 20px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+      <span style="font-weight:800">✦ New in Claude OS</span>
+      <button class="btn2" id="newsok" style="padding:6px 12px">Got it</button>
+    </div>
+    <ul style="margin:10px 0 0;padding-left:20px;font-size:13px;line-height:1.7;color:var(--muted)">${WHATS_NEW.map(w=>`<li>${w}</li>`).join("")}</ul>
+  </div>`:"";
   return `<h1>Your Claude OS</h1>
   <p class="sub">Read one guide. Build the thing inside it. Mark it done. That's the whole system. This page keeps the score.</p>
   ${fresh?`<div class="onboard"><b>First time here? It works like this:</b><ol>
@@ -655,6 +683,7 @@ function dash(){
     <li>Every time Claude saves you real time, log it in <b>Wins Log</b>. That page becomes your receipt.</li>
   </ol></div>`:""}
   ${cta()}
+  ${news}
   <div class="kpis">
     <div class="kpi"><div class="n">${o.pct}%</div><div class="l">Course complete</div></div>
     <div class="kpi"><div class="n">${o.done}<span style="font-size:18px;color:var(--muted)">/${o.total}</span></div><div class="l">Guides done</div></div>
@@ -740,10 +769,12 @@ function path(){
     html+=`<h2>Module ${mo}: ${MODULES[mo]} <span class="mono" style="font-size:12px;color:var(--muted);font-weight:400">${s.done}/${s.total} done</span></h2><div class="card">`;
     GUIDES.forEach((g,i)=>{ if(g[1]!==mo)return;
       const lk=lockedGuide(i);
+      const slug=g[4],hasNote=!!(S.n&&S.n[slug]&&S.n[slug].trim());
       html+=`<div class="guide ${lk?"locked":""}">
         <div class="g-main"><div class="g-title">${lk?esc(g[0]):`<a href="${url(g[4])}" target="_blank" rel="noopener">${esc(g[0])}</a>`}</div>
-        <div class="g-meta"><span>${g[2]}</span><span>${g[3]}</span></div>
-        <div class="g-build">You'll build: ${esc(g[5])}</div></div>
+        <div class="g-meta"><span>${g[2]}</span><span>${g[3]}</span>${lk?"":`<button class="notebtn ${hasNote?"has":""}" data-note="${slug}">✎ ${hasNote?"Note":"Add note"}</button>`}</div>
+        <div class="g-build">You'll build: ${esc(g[5])}</div>
+        ${!lk&&noteOpen[slug]?`<textarea class="g-notes" data-notetxt="${slug}" placeholder="What did you build? What broke? What will you reuse?">${esc(S.n&&S.n[slug]||"")}</textarea>`:""}</div>
         ${lk?`<a class="status s0" href="${SUB}" target="_blank" rel="noopener">🔒 Paid</a>`:`<button class="status s${stat(i)}" data-g="${i}">${STATUUS_SAFE(i)}</button>`}
       </div>`;
     });
@@ -838,7 +869,7 @@ function wins(){
     <div class="f"><label for="wd">Date</label><input id="wd" type="date"></div>
     <button class="add" id="addwin">Log win</button>
   </div></div>
-  <h2>Your receipts <span class="mono" style="font-size:12px;color:var(--done);font-weight:400">${total?`${total%1?total.toFixed(1):total} hours/week saved`:""}</span></h2>
+  <h2>Your receipts <span class="mono" style="font-size:12px;color:var(--done);font-weight:400">${total?`${total%1?total.toFixed(1):total} hours/week saved`:""}</span> <button class="btn2" id="exportmd" style="float:right;padding:6px 12px;font-size:11.5px">Export my journal (.md)</button></h2>
   <div class="card">${rows}</div>`;
 }
 
@@ -1079,6 +1110,28 @@ function wire(){
     if(!FREE&&overall().pct===100&&S.cc!==1){S.cc=1;S.ccd=today();save();setTimeout(showCourseCert,500);}});
   const ccb=$("#coursecert");
   if(ccb)ccb.onclick=showCourseCert;
+  const no=$("#newsok");
+  if(no)no.onclick=()=>{S.seenv=APP_V;save();render();};
+  document.querySelectorAll("[data-note]").forEach(b=>b.onclick=()=>{const s=b.dataset.note;noteOpen[s]=!noteOpen[s];render();});
+  document.querySelectorAll("[data-notetxt]").forEach(t=>{
+    t.onchange=()=>{S.n=S.n||{};S.n[t.dataset.notetxt]=t.value;save();render();};});
+  const ex=$("#exportmd");
+  if(ex)ex.onclick=()=>{
+    let md="# My Claude OS Journal\n\n_Exported "+today()+" · aiinpublic.com_\n\n";
+    const notes=Object.entries(S.n||{}).filter(([k,v])=>v&&v.trim());
+    if(notes.length){md+="## Build notes\n\n";
+      for(const[slug,txt]of notes){const g=GUIDES.find(x=>x[4]===slug);
+        md+="### "+(g?g[0]:slug)+"\n\n"+txt.trim()+"\n\n";}}
+    if(S.w.length){md+="## Wins\n\n";
+      for(const w of S.w)md+="- **"+w.date+"** "+w.text+(w.saved?" _("+w.saved+"h/week saved)_":"")+"\n";}
+    if(!notes.length&&!S.w.length)md+="_Nothing logged yet. Go build something._\n";
+    try{
+      const a=document.createElement("a");
+      a.href=URL.createObjectURL(new Blob([md],{type:"text/markdown"}));
+      a.download="claude-os-journal.md";document.body.appendChild(a);a.click();a.remove();
+      ex.textContent="Saved ✓";
+    }catch(_){ex.textContent="Blocked here";}
+    setTimeout(()=>ex.textContent="Export my journal (.md)",2200);};
   const ht=$("#habitTime");
   if(ht)ht.onchange=()=>{S.ht=ht.value||"20:00";save();const g=$("#gcal");if(g)g.href=gcalHref();};
   const ics=$("#icsdl");
@@ -1133,7 +1186,7 @@ function wire(){
     try{
       const parsed=JSON.parse(decodeURIComponent(escape(atob(v))));
       if(typeof parsed!=="object"||!parsed)throw 0;
-      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0,dd:parsed.dd||{},cc:parsed.cc===1?1:0,ccd:parsed.ccd||"",nt:parsed.nt===1?1:0,ht:parsed.ht||"20:00",th:parsed.th||""};
+      S={g:parsed.g||{},x:parsed.x||{},w:Array.isArray(parsed.w)?parsed.w:[],d:parsed.d||{},best:parsed.best||0,name:parsed.name||"",t:Array.isArray(parsed.t)?parsed.t:[],tid:parsed.tid||0,u:parsed.u===1?1:0,dd:parsed.dd||{},cc:parsed.cc===1?1:0,ccd:parsed.ccd||"",nt:parsed.nt===1?1:0,ht:parsed.ht||"20:00",th:parsed.th||"",n:parsed.n||{},seenv:parsed.seenv||0};
       applyTheme();
       if(!PAID_BUILD)FREE=S.u!==1;
       save();render();
@@ -1157,6 +1210,9 @@ document.getElementById("themebtn").onclick=()=>{
   save();applyTheme();};
 applyTheme();
 render();
+
+/* install as app: register service worker where hosted (silently skipped elsewhere) */
+try{if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});}catch(e){}
 
 /* streak nudge: fires only while the tab is open, once per visit */
 if(S.nt===1&&"Notification" in window&&Notification.permission==="granted"){
